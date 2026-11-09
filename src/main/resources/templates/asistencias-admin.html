@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reporte de Asistencias - B&B LIMSA S.A.C.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/estilos.css}">
+</head>
+<body>
+
+<header class="barra">
+    <div class="barra-in">
+        <a class="marca" th:href="@{/marcador}">
+            <span class="logo">B&amp;B</span>
+            <span><b>B&amp;B LIMSA S.A.C.</b><small>Control de asistencia</small></span>
+        </a>
+        <nav class="menu">
+            <a th:href="@{/marcador}">Marcador</a>
+            <a class="activo" th:href="@{/reporte}">Reporte</a>
+            <span class="sesion">
+                <span th:text="${nombreUsuario} + ' · ' + ${rolUsuario}">Usuario · ROL</span>
+                <form th:action="@{/logout}" method="post"><button type="submit" class="salir">Salir</button></form>
+            </span>
+        </nav>
+    </div>
+</header>
+
+<main class="pagina">
+    <h1 class="titulo">Reporte General de Asistencia</h1>
+    <p class="subtitulo">Empresa: <b th:text="${empresa}">Empresa</b> &nbsp;|&nbsp; Área: <b th:text="${area}">Área</b></p>
+
+    <div th:if="${mensaje}" class="alerta ok" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alerta error" th:text="${error}"></div>
+
+    <!-- Indicadores: cada tarjeta lleva a su sección o aplica su filtro -->
+    <section class="indicadores">
+        <a class="indicador enlace" href="#personal">
+            <div class="num" th:text="${totalEmpleados}">0</div>
+            <div class="lbl">Personal habilitado</div>
+            <div class="ver">Ver lista &darr;</div>
+        </a>
+        <a class="indicador enlace" href="#registros">
+            <div class="num" th:text="${totalMarcaciones}">0</div>
+            <div class="lbl">Marcaciones registradas</div>
+            <div class="ver">Ver registros &darr;</div>
+        </a>
+        <a class="indicador enlace" th:href="@{/reporte(estado='PENDIENTE_APROBACION_PLANTA')}"
+           th:classappend="${filtroEstado == 'PENDIENTE_APROBACION_PLANTA'} ? 'seleccionado'">
+            <div class="num" th:text="${totalPendientes}">0</div>
+            <div class="lbl">Pendientes de aprobación (planta)</div>
+            <div class="ver">Mostrar solo pendientes &rarr;</div>
+        </a>
+        <a class="indicador enlace" th:href="@{/reporte(estado='OBSERVADO_JORNADA_INCOMPLETA')}"
+           th:classappend="${filtroEstado == 'OBSERVADO_JORNADA_INCOMPLETA'} ? 'seleccionado'">
+            <div class="num" th:text="${totalObservadas}">0</div>
+            <div class="lbl">Jornadas observadas</div>
+            <div class="ver">Mostrar solo observadas &rarr;</div>
+        </a>
+        <a class="indicador pdf" th:href="@{/reporte/exportar-pdf}">
+            <div class="num"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
+            <div class="lbl">Descargar PDF</div>
+            <div class="ver">Reporte de asistencias</div>
+        </a>
+        <a class="indicador excel" th:href="@{/reporte/exportar}">
+            <div class="num"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg></div>
+            <div class="lbl">Descargar Excel</div>
+            <div class="ver">Todas las asistencias</div>
+        </a>
+    </section>
+
+    <!-- Registros de asistencia -->
+    <section class="tarjeta" id="registros">
+        <div class="herramientas">
+            <h3 th:text="'Registros de asistencia (' + ${#lists.size(marcaciones)} + ')'">Registros de asistencia</h3>
+            <input type="search" id="buscador" class="buscador" placeholder="Buscar por nombre, DNI o estado...">
+        </div>
+
+        <form id="filtros" class="filtros" th:action="@{/reporte}" method="get">
+            <div class="rapidos">
+                <span>Elegir rápido:</span>
+                <button type="button" class="chip" data-rango="hoy">Hoy</button>
+                <button type="button" class="chip" data-rango="ayer">Ayer</button>
+                <button type="button" class="chip" data-rango="7dias">Últimos 7 días</button>
+                <button type="button" class="chip" data-rango="mes">Este mes</button>
+                <button type="button" class="chip" data-rango="todo">Todas las fechas</button>
+            </div>
+
+            <label>Fecha desde
+                <input type="date" name="desde" id="desde" th:value="${filtroDesde}">
+                <small>día / mes / año</small>
+            </label>
+            <label>Fecha hasta
+                <input type="date" name="hasta" id="hasta" th:value="${filtroHasta}">
+                <small>día / mes / año</small>
+            </label>
+            <label>Estado
+                <select name="estado">
+                    <option value="">Todos</option>
+                    <option value="CONFORME" th:selected="${filtroEstado == 'CONFORME'}">Conforme</option>
+                    <option value="OBSERVADO_JORNADA_INCOMPLETA" th:selected="${filtroEstado == 'OBSERVADO_JORNADA_INCOMPLETA'}">Observado (jornada incompleta)</option>
+                    <option value="PENDIENTE_APROBACION_PLANTA" th:selected="${filtroEstado == 'PENDIENTE_APROBACION_PLANTA'}">Pendiente de aprobación</option>
+                </select>
+            </label>
+
+            <div class="acciones-filtro">
+                <button type="submit" class="btn">Filtrar</button>
+                <a class="btn btn-claro" th:href="@{/reporte}">Limpiar</a>
+                <button type="submit" class="btn btn-oscuro" th:formaction="@{/reporte/exportar}"
+                        title="Descarga en Excel lo que cumple los filtros elegidos"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg> Descargar Excel</button>
+                <button type="submit" class="btn btn-oscuro" th:formaction="@{/reporte/exportar-pdf}"
+                        title="Descarga en PDF lo que cumple los filtros elegidos"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> Descargar PDF</button>
+            </div>
+        </form>
+
+        <div class="tabla-wrap">
+            <table id="tabla-marcaciones" class="tabla-resp">
+                <thead>
+                <tr>
+                    <th>ID</th><th>DNI</th><th>Empleado</th><th>Fecha y hora</th>
+                    <th>Marca</th><th>Ubicación</th><th>Horas</th><th>Estado</th><th>Evidencia</th>
+                    <th th:if="${rolUsuario == 'RRHH'}">Acción</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="m : ${marcaciones}">
+                    <td data-label="ID" th:text="${m.id}">1</td>
+                    <td data-label="DNI" th:text="${m.empleado.dni}">71234567</td>
+                    <td data-label="Empleado" th:text="${m.empleado.nombre}">Juan Pérez</td>
+                    <td data-label="Fecha y hora" th:text="${#temporals.format(m.fechaHora, 'dd/MM/yyyy HH:mm:ss')}">01/11/2026 08:00:00</td>
+                    <td data-label="Marca"><span class="badge" th:classappend="'badge-' + ${m.tipoMarca}" th:text="${m.tipoMarca}">ENTRADA</span></td>
+                    <td data-label="Ubicación"><span class="badge" th:classappend="'badge-' + ${m.ubicacion}" th:text="${m.ubicacion}">PLANTA</span></td>
+                    <td data-label="Horas" th:text="${m.horasTrabajadas != null} ? (${m.horasTrabajadas} + ' h') : '—'">—</td>
+                    <td data-label="Estado">
+                        <span class="badge" th:classappend="'badge-' + ${m.estado}"
+                              th:text="${#strings.replace(m.estado, '_', ' ')}"
+                              th:title="${m.fechaAprobacion != null ? 'Aprobado por ' + (m.aprobadoPor ?: '—') + ' el ' + #temporals.format(m.fechaAprobacion, 'dd/MM/yyyy HH:mm') : null}">EN JORNADA</span>
+                    </td>
+                    <td data-label="Evidencia">
+                        <button type="button" class="btn btn-claro btn-sm btn-ver-foto" th:if="${conFoto.contains(m.id)}"
+                                th:attr="data-src=@{/reporte/foto/{id}(id=${m.id})}, data-pie=${m.empleado.nombre + ' · ' + #temporals.format(m.fechaHora, 'dd/MM/yyyy HH:mm')}">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            Ver foto
+                        </button>
+                        <span th:unless="${conFoto.contains(m.id)}" class="sin-foto">Sin foto</span>
+                    </td>
+                    <td data-label="Acción" th:if="${rolUsuario == 'RRHH'}">
+                        <form th:if="${m.estado == 'PENDIENTE_APROBACION_PLANTA'}"
+                              th:action="@{/reporte/aprobar/{id}(id=${m.id})}" method="post">
+                            <button type="submit" class="btn btn-sm">Aprobar</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(marcaciones)}">
+                    <td th:colspan="${rolUsuario == 'RRHH'} ? 10 : 9" class="vacio">No hay registros con esos filtros.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="espacio"></div>
+
+    <!-- Personal -->
+    <section class="tarjeta" id="personal">
+        <h3>Personal habilitado</h3>
+
+        <details class="registro" th:if="${rolUsuario == 'RRHH'}">
+            <summary>+ Registrar nuevo empleado</summary>
+            <form class="form-empleado" th:action="@{/empleados/registrar}" method="post">
+                <label>DNI
+                    <input type="text" name="dni" maxlength="8" minlength="8" pattern="[0-9]{8}"
+                           inputmode="numeric" placeholder="8 dígitos" required autocomplete="off">
+                </label>
+                <label>Nombre completo
+                    <input type="text" name="nombre" maxlength="100" placeholder="Ana Ruiz" required>
+                </label>
+                <label>Área / Cargo
+                    <input type="text" name="area" maxlength="100" placeholder="Almacén / Operario" required>
+                </label>
+                <label>Turno asignado
+                    <input type="text" name="turno" maxlength="40" placeholder="08:00 AM - 05:00 PM" required>
+                </label>
+                <input type="hidden" name="ubicacion" value="PLANTA">
+                <button type="submit" class="btn">Guardar empleado</button>
+            </form>
+        </details>
+
+        <div class="tabla-wrap">
+            <table class="tabla-resp">
+                <thead>
+                <tr>
+                    <th>DNI</th><th>Nombre completo</th><th>Área / Cargo</th><th>Turno asignado</th><th>Ubicación</th>
+                    <th th:if="${rolUsuario == 'RRHH'}">Acción</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${empleados}">
+                    <td data-label="DNI" th:text="${e.dni}">71234567</td>
+                    <td data-label="Nombre" th:text="${e.nombre}">Juan Pérez</td>
+                    <td data-label="Área / Cargo" th:text="${e.area}">Área</td>
+                    <td data-label="Turno" th:text="${e.turnoAsignado}">08:00 AM - 05:00 PM</td>
+                    <td data-label="Ubicación"><span class="badge" th:classappend="'badge-' + ${e.ubicacion}" th:text="${e.ubicacion}">PLANTA</span></td>
+                    <td data-label="Acción" th:if="${rolUsuario == 'RRHH'}">
+                        <form th:action="@{/empleados/eliminar/{dni}(dni=${e.dni})}" method="post"
+                              onsubmit="return confirm('¿Eliminar a este empleado? Solo se puede si no tiene marcaciones.');">
+                            <button type="submit" class="btn btn-sm btn-rojo">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<!-- Visor de la foto de evidencia -->
+<div class="visor" id="visor" hidden>
+    <button type="button" class="visor-cerrar" id="visor-cerrar" aria-label="Cerrar">&times;</button>
+    <figure>
+        <img id="visor-img" alt="Foto de evidencia de la marcación">
+        <figcaption id="visor-pie"></figcaption>
+    </figure>
+</div>
+
+<script>
+    var desde = document.getElementById('desde');
+    var hasta = document.getElementById('hasta');
+    var formFiltros = document.getElementById('filtros');
+
+    // Fecha en formato aaaa-mm-dd con la hora local de la computadora
+    function iso(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    // Botones "Hoy", "Ayer", "Últimos 7 días", "Este mes", "Todas las fechas"
+    document.querySelectorAll('[data-rango]').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var rango = boton.getAttribute('data-rango');
+            var hoy = new Date();
+            var ini = new Date();
+            var fin = new Date();
+            if (rango === 'ayer') {
+                ini.setDate(ini.getDate() - 1);
+                fin = new Date(ini);
+            } else if (rango === '7dias') {
+                ini.setDate(ini.getDate() - 6);
+            } else if (rango === 'mes') {
+                ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            }
+            if (rango === 'todo') {
+                desde.value = '';
+                hasta.value = '';
+            } else {
+                desde.value = iso(ini);
+                hasta.value = iso(fin);
+            }
+            formFiltros.submit();
+        });
+    });
+
+    // Búsqueda rápida dentro de las filas ya mostradas
+    document.getElementById('buscador').addEventListener('input', function () {
+        var texto = this.value.toLowerCase();
+        document.querySelectorAll('#tabla-marcaciones tbody tr').forEach(function (fila) {
+            if (fila.querySelector('.vacio')) { return; }
+            fila.style.display = fila.textContent.toLowerCase().indexOf(texto) > -1 ? '' : 'none';
+        });
+    });
+
+    // Visor de fotos de evidencia
+    var visor = document.getElementById('visor');
+    function cerrarVisor() { visor.hidden = true; document.getElementById('visor-img').src = ''; }
+    document.querySelectorAll('.btn-ver-foto').forEach(function (b) {
+        b.addEventListener('click', function () {
+            document.getElementById('visor-img').src = b.getAttribute('data-src');
+            document.getElementById('visor-pie').textContent = b.getAttribute('data-pie');
+            visor.hidden = false;
+        });
+    });
+    document.getElementById('visor-cerrar').addEventListener('click', cerrarVisor);
+    visor.addEventListener('click', function (e) { if (e.target === visor) { cerrarVisor(); } });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarVisor(); } });
+
+    // Si se aplicó un filtro, baja directo a los registros
+    if (window.location.search) {
+        document.getElementById('registros').scrollIntoView();
+    }
+</script>
+</body>
+</html>

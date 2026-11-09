@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Marcador de Asistencia - B&B LIMSA S.A.C.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/estilos.css}">
+</head>
+<body>
+
+<header class="barra">
+    <div class="barra-in">
+        <a class="marca" th:href="@{/marcador}">
+            <span class="logo">B&amp;B</span>
+            <span><b>B&amp;B LIMSA S.A.C.</b><small>Control de asistencia</small></span>
+        </a>
+        <nav class="menu">
+            <a class="activo" th:href="@{/marcador}">Marcador</a>
+            <a th:href="@{/reporte}">Reporte</a>
+        </nav>
+    </div>
+</header>
+
+<main class="pagina">
+    <h1 class="titulo">Marcador de Asistencia</h1>
+    <p class="subtitulo">Ingresa tu DNI y adjunta una foto de tu rostro para registrar tu <b>entrada</b> o <b>salida</b>. La foto es <b>obligatoria</b> en ambas marcas.</p>
+
+    <div class="marcador">
+
+        <!-- Panel de marcación -->
+        <section class="tarjeta">
+            <div class="reloj">
+                <div class="hora" id="reloj">--:--:--</div>
+                <div class="fecha" id="fecha"></div>
+            </div>
+
+            <div th:if="${mensaje}" class="alerta ok" id="aviso" th:text="${mensaje}"></div>
+            <div th:if="${error}" class="alerta error" id="aviso" th:text="${error}"></div>
+
+            <form id="form-marcar" th:action="@{/marcador/marcar}" method="post" enctype="multipart/form-data"
+                  th:data-desafio="${desafio}">
+                <input type="hidden" name="nonce" th:value="${nonce}">
+                <input type="text" id="dni" name="dni" class="dni-input" placeholder="DNI"
+                       maxlength="8" minlength="8" pattern="[0-9]{8}" inputmode="numeric"
+                       title="8 dígitos numéricos" required autofocus autocomplete="off">
+
+                <div class="teclado">
+                    <button type="button" class="tecla" data-n="1">1</button>
+                    <button type="button" class="tecla" data-n="2">2</button>
+                    <button type="button" class="tecla" data-n="3">3</button>
+                    <button type="button" class="tecla" data-n="4">4</button>
+                    <button type="button" class="tecla" data-n="5">5</button>
+                    <button type="button" class="tecla" data-n="6">6</button>
+                    <button type="button" class="tecla" data-n="7">7</button>
+                    <button type="button" class="tecla" data-n="8">8</button>
+                    <button type="button" class="tecla" data-n="9">9</button>
+                    <button type="button" class="tecla borrar" id="limpiar">Borrar</button>
+                    <button type="button" class="tecla" data-n="0">0</button>
+                    <button type="button" class="tecla" id="atras">&larr;</button>
+                </div>
+
+                <!-- Foto OBLIGATORIA adjunta: en el celular abre la cámara frontal; se rechaza si no se detecta un rostro real -->
+                <div class="foto-zona">
+                    <input type="file" id="foto" name="foto" class="oculto" accept="image/*" capture="user">
+                    <label for="foto" class="btn-foto" id="etiqueta-foto">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <span>Adjuntar foto de mi rostro <em>(obligatorio)</em></span>
+                    </label>
+                    <p class="camara-instruccion" id="estado-foto" role="status" aria-live="polite" style="display:none"></p>
+                    <div class="vista-foto" id="bloque-vista" style="display:none">
+                        <img id="vista-foto" alt="Vista previa de tu foto">
+                        <div>
+                            <strong>Rostro detectado</strong>
+                            <small>Se enviará junto con tu marca.</small>
+                            <button type="button" class="chip" id="quitar-foto">Cambiar foto</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-marcar">MARCAR ASISTENCIA</button>
+            </form>
+        </section>
+
+        <!-- Últimas marcaciones -->
+        <section class="tarjeta">
+            <h3>Últimas marcaciones</h3>
+            <ul class="recientes">
+                <li th:each="r : ${recientes}">
+                    <div class="quien">
+                        <span class="avatar" th:text="${#strings.substring(r.empleado.nombre, 0, 1)}">J</span>
+                        <div>
+                            <strong th:text="${r.empleado.nombre}">Juan Pérez</strong>
+                            <small th:text="${#temporals.format(r.fechaHora, 'dd/MM/yyyy HH:mm')}">01/11/2026 08:00</small>
+                        </div>
+                    </div>
+                    <span class="insignias">
+                        <span class="badge badge-FOTO" th:if="${conFoto.contains(r.id)}">Foto</span>
+                        <span class="badge" th:classappend="'badge-' + ${r.tipoMarca}" th:text="${r.tipoMarca}">ENTRADA</span>
+                    </span>
+                </li>
+                <li th:if="${#lists.isEmpty(recientes)}" style="color:#6b7a8c;">Aún no hay marcaciones registradas.</li>
+            </ul>
+        </section>
+
+    </div>
+</main>
+
+<script>
+    // Reloj en vivo
+    function actualizarReloj() {
+        var ahora = new Date();
+        document.getElementById('reloj').textContent = ahora.toLocaleTimeString('es-PE', {hour12: false});
+        document.getElementById('fecha').textContent =
+            ahora.toLocaleDateString('es-PE', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+    }
+    actualizarReloj();
+    setInterval(actualizarReloj, 1000);
+
+    // Teclado numérico en pantalla
+    var campo = document.getElementById('dni');
+    document.querySelectorAll('.tecla[data-n]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            if (campo.value.length < 8) { campo.value += b.getAttribute('data-n'); }
+            campo.focus();
+        });
+    });
+    document.getElementById('atras').addEventListener('click', function () {
+        campo.value = campo.value.slice(0, -1); campo.focus();
+    });
+    document.getElementById('limpiar').addEventListener('click', function () {
+        campo.value = ''; campo.focus();
+    });
+    // Solo dígitos si escriben con el teclado físico
+    campo.addEventListener('input', function () { campo.value = campo.value.replace(/\D/g, ''); });
+
+    // ---------- Foto adjunta OBLIGATORIA: se valida en el navegador que haya un rostro real (MediaPipe) ----------
+    var MP_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+    var MP_MODELO = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+
+    var formulario = document.getElementById('form-marcar');
+    var inputFoto = document.getElementById('foto');
+    var vistaFoto = document.getElementById('vista-foto');
+    var bloqueVista = document.getElementById('bloque-vista');
+    var etiquetaFoto = document.getElementById('etiqueta-foto');
+    var estadoFoto = document.getElementById('estado-foto');
+
+    var detector = null, fotoLista = false, validando = false;
+
+    function estado(texto, esError) {
+        estadoFoto.style.display = texto ? 'block' : 'none';
+        estadoFoto.textContent = texto || '';
+        estadoFoto.classList.toggle('mala', !!esError);
+    }
+
+    function quitarFoto() {
+        fotoLista = false;
+        inputFoto.value = '';
+        bloqueVista.style.display = 'none';
+        etiquetaFoto.style.display = 'flex';
+    }
+    document.getElementById('quitar-foto').addEventListener('click', function () { quitarFoto(); estado(''); });
+
+    async function cargarDetector() {
+        if (detector) { return detector; }
+        var vision = await import(MP_URL + '/vision_bundle.mjs');
+        var archivos = await vision.FilesetResolver.forVisionTasks(MP_URL + '/wasm');
+        var crear = function (delegado) {
+            return vision.FaceLandmarker.createFromOptions(archivos, {
+                baseOptions: {modelAssetPath: MP_MODELO, delegate: delegado},
+                runningMode: 'IMAGE', numFaces: 2, outputFaceBlendshapes: true
+            });
+        };
+        try { detector = await crear('GPU'); } catch (e) { detector = await crear('CPU'); }
+        return detector;
+    }
+
+    function puntaje(res, nombre) {
+        var cats = res.faceBlendshapes && res.faceBlendshapes[0] && res.faceBlendshapes[0].categories;
+        if (!cats) { return 0; }
+        for (var i = 0; i < cats.length; i++) { if (cats[i].categoryName === nombre) { return cats[i].score; } }
+        return 0;
+    }
+
+    // Devuelve el motivo del rechazo o null si la foto es aceptable
+    function motivoRechazo(res) {
+        var caras = res && res.faceLandmarks ? res.faceLandmarks.length : 0;
+        if (caras === 0) { return 'No se detectó un rostro real en la foto. Tómate una selfie de frente, con buena luz.'; }
+        if (caras > 1) { return 'En la foto debe aparecer una sola persona.'; }
+        var pts = res.faceLandmarks[0];
+
+        var minX = 1, maxX = 0;
+        for (var i = 0; i < pts.length; i++) { if (pts[i].x < minX) minX = pts[i].x; if (pts[i].x > maxX) maxX = pts[i].x; }
+        if ((maxX - minX) < 0.22) { return 'Tu rostro se ve muy lejos. Acércate a la cámara.'; }
+
+        var ancho = pts[454].x - pts[234].x;
+        var g = Math.abs(ancho) < 1e-6 ? 0.5 : (pts[1].x - pts[234].x) / ancho;
+        if (g < 0.35 || g > 0.65) { return 'Mira de frente a la cámara (rostro sin girar).'; }
+
+        var parp = (puntaje(res, 'eyeBlinkLeft') + puntaje(res, 'eyeBlinkRight')) / 2;
+        if (parp > 0.6) { return 'Tienes los ojos cerrados. Vuelve a tomar la foto con los ojos abiertos.'; }
+        return null;
+    }
+
+    function rechazar(mensaje) {
+        quitarFoto();
+        estado(mensaje, true);
+        validando = false;
+    }
+
+    inputFoto.addEventListener('change', function () {
+        var archivo = inputFoto.files && inputFoto.files[0];
+        if (!archivo) { quitarFoto(); return; }
+        if (!/^image\//.test(archivo.type)) { rechazar('El archivo debe ser una imagen.'); return; }
+
+        validando = true;
+        fotoLista = false;
+        estado('Verificando tu rostro…');
+
+        var lector = new FileReader();
+        lector.onerror = function () { rechazar('No se pudo leer la foto. Intenta de nuevo.'); };
+        lector.onload = function (e) {
+            var img = new Image();
+            img.onerror = function () { rechazar('La foto no es una imagen válida.'); };
+            img.onload = async function () {
+                var maximo = 1280;
+                var escala = Math.min(1, maximo / Math.max(img.width, img.height));
+                var lienzo = document.createElement('canvas');
+                lienzo.width = Math.round(img.width * escala);
+                lienzo.height = Math.round(img.height * escala);
+                lienzo.getContext('2d').drawImage(img, 0, 0, lienzo.width, lienzo.height);
+
+                var motivo;
+                try {
+                    var det = await cargarDetector();
+                    motivo = motivoRechazo(det.detect(lienzo));
+                } catch (err) {
+                    rechazar('No se pudo cargar la verificación facial (revisa tu conexión a internet) e intenta de nuevo.');
+                    return;
+                }
+                if (motivo) { rechazar(motivo); return; }
+
+                lienzo.toBlob(function (blob) {
+                    if (!blob) { rechazar('No se pudo procesar la foto. Intenta de nuevo.'); return; }
+                    try {
+                        var lista = new DataTransfer();
+                        lista.items.add(new File([blob], 'rostro.jpg', {type: 'image/jpeg'}));
+                        inputFoto.files = lista.files;
+                    } catch (err2) {
+                        rechazar('Tu navegador no permite adjuntar la foto. Usa Chrome, Edge o Safari actualizado.');
+                        return;
+                    }
+                    vistaFoto.src = URL.createObjectURL(blob);
+                    bloqueVista.style.display = 'flex';
+                    etiquetaFoto.style.display = 'none';
+                    estado('');
+                    fotoLista = true;
+                    validando = false;
+                }, 'image/jpeg', 0.85);
+            };
+            img.src = e.target.result;
+        };
+        lector.readAsDataURL(archivo);
+    });
+
+    // Sin foto con rostro detectado NO se puede marcar (ni entrada ni salida)
+    formulario.addEventListener('submit', function (ev) {
+        if (validando) { ev.preventDefault(); estado('Espera, estamos verificando tu rostro…'); return; }
+        if (!fotoLista || !inputFoto.files || inputFoto.files.length === 0) {
+            ev.preventDefault();
+            estado('Debes adjuntar una foto de tu rostro para marcar.', true);
+        }
+    });
+
+    // El aviso desaparece solo
+    var aviso = document.getElementById('aviso');
+    if (aviso) { setTimeout(function () { aviso.style.display = 'none'; }, 6000); }
+</script>
+</body>
+</html>

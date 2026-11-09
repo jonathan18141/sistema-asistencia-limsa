@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Iniciar sesión - B&B LIMSA S.A.C.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/estilos.css}">
+</head>
+<body>
+
+<header class="barra">
+    <div class="barra-in">
+        <a class="marca" th:href="@{/marcador}">
+            <span class="logo">B&amp;B</span>
+            <span><b>B&amp;B LIMSA S.A.C.</b><small>Control de asistencia</small></span>
+        </a>
+        <nav class="menu">
+            <a th:href="@{/marcador}">Marcador</a>
+            <a th:href="@{/reporte}">Reporte</a>
+        </nav>
+    </div>
+</header>
+
+<main class="pagina">
+    <section class="tarjeta login">
+        <h1 class="titulo">Acceso al reporte</h1>
+        <p class="subtitulo">Solo para Recursos Humanos y Gerencia.</p>
+
+        <div th:if="${error}" class="alerta error" th:text="${error}"></div>
+
+        <form th:action="@{/login}" method="post" class="form-login">
+            <label>Usuario
+                <input type="text" name="usuario" maxlength="30" required autofocus autocomplete="username">
+            </label>
+            <label>Contraseña
+                <input type="password" name="clave" maxlength="60" required autocomplete="current-password">
+            </label>
+            <button type="submit" class="btn-marcar">INGRESAR</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>
